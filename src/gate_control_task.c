@@ -1,0 +1,16 @@
+/*
+ * gate_control_task.c
+ *
+ * Purpose:
+ * - Implements the Gate Control Task.
+ *
+ * Responsibilities:
+ * - Receive events from the gate event queue.
+ * - Pass events to the finite state machine.
+ * - Decide whether the gate should open, close, stop, or reverse.
+ * - Handle manual mode.
+ * - Handle one-touch auto mode.
+ * - Handle security priority over driver commands.
+ * - Handle conflicting OPEN and CLOSE commands safely.
+ * - Update the shared gate state through the FSM layer.
+ */

@@ -22,3 +22,19 @@
  * - Closed limit
  * - Obstacle
  */
+ 
+#include "FreeRTOS.h"
+#include "task.h"
+
+#include "input_task.h"
+#include "app_config.h"
+
+void vInputTask(void *pvParameters)
+{
+    (void) pvParameters;
+
+    while(1)
+    {
+        vTaskDelay(pdMS_TO_TICKS(INPUT_POLL_PERIOD_MS));
+    }
+}

@@ -1,3 +1,7 @@
+#ifndef INPUT_TASK_H
+#define INPUT_TASK_H
+
+
 /*
  * input_task.h
  *
@@ -8,3 +12,12 @@
  * - the Input Task function
  * - any public input-task helper functions if needed
  */
+ 
+ 
+ 
+ void vInputTask(void *pvParameters);
+ 
+ 
+ 
+ 
+ #endif

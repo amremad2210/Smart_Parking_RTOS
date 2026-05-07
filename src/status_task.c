@@ -15,3 +15,19 @@
  * - last received event
  * - safety status
  */
+ 
+#include "FreeRTOS.h"
+#include "task.h"
+
+#include "status_task.h"
+#include "app_config.h"
+
+void vStatusTask(void *pvParameters)
+{
+    (void) pvParameters;
+
+    while(1)
+    {
+        vTaskDelay(pdMS_TO_TICKS(STATUS_TASK_PERIOD_MS));
+    }
+}

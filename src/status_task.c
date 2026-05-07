@@ -1,17 +1,26 @@
 /*
  * status_task.c
- *
- * Purpose:
- * - Implements the Status or Debug Task.
- *
- * Responsibilities:
- * - Display or print the current system state.
- * - Help verify system behavior during testing.
- * - Provide debug output through UART or debugger console.
- *
- * Useful information to display:
- * - current gate state
- * - current mode, manual or auto
- * - last received event
- * - safety status
  */
+
+#include <stdio.h>
+#include "FreeRTOS.h"
+#include "task.h"
+#include "app_config.h"
+#include "gate_fsm.h"
+
+void StatusTask(void *pvParameters)
+{
+    (void)pvParameters;
+
+    for (;;)
+    {
+        gate_status_t s = GateFSM_GetStatus();
+        printf("[Gate] state=%s mode=%s dir=%u src=%u\r\n",
+               GateFSM_StateToString(s.state),
+               GateFSM_ModeToString(s.mode),
+               (unsigned int)s.direction,
+               (unsigned int)s.active_source);
+
+        vTaskDelay(pdMS_TO_TICKS(STATUS_PRINT_PERIOD_MS));
+    }
+}

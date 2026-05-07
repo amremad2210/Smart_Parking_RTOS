@@ -1,16 +1,22 @@
 /*
  * gate_shared.h
  *
- * Purpose:
- * - Declares shared FreeRTOS objects and shared state.
- *
- * This file should later declare:
- * - gate event queue
- * - gate state mutex
- * - open limit semaphore
- * - closed limit semaphore
- * - obstacle semaphore or event mechanism
- * - shared gate state variable
- *
- * This file should not define the actual objects.
+ * Shared RTOS handles and gate status.
  */
+
+#ifndef GATE_SHARED_H
+#define GATE_SHARED_H
+
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "semphr.h"
+#include "gate_types.h"
+
+extern QueueHandle_t gGateEventQueue;
+extern SemaphoreHandle_t gGateStateMutex;
+extern SemaphoreHandle_t gOpenLimitSem;
+extern SemaphoreHandle_t gClosedLimitSem;
+extern SemaphoreHandle_t gObstacleSem;
+extern gate_status_t gGateStatus;
+
+#endif /* GATE_SHARED_H */

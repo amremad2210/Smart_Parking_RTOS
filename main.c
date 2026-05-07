@@ -21,19 +21,32 @@
 #include <stdio.h>
 
 
+#include <stdint.h>
+#include <stdbool.h>
+
+#include "inc/hw_memmap.h"
+#include "driverlib/sysctl.h"
+#include "driverlib/gpio.h"
+
+#include "board_io.h"
+
+
 
 
 
 int main(void)
 {
-	
-	while(1){
-	
-		
-		
-	}
-	
+    bool driverOpen;
+    bool driverClose;
 
+    Board_Init();
+
+    while(1)
+    {
+        driverOpen = Board_ReadDriverOpen();
+        driverClose = Board_ReadDriverClose();
+
+        Board_SetGreenLED(driverOpen);
+        Board_SetRedLED(driverClose);
+    }
 }
-
-

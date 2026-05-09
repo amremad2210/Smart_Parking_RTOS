@@ -21,13 +21,19 @@
 
 #include "gate_control_task.h"
 #include "gate_shared.h"
+#include "gate_fsm.h"
 
 void vGateControlTask(void *pvParameters)
 {
     (void) pvParameters;
-
+    GateEvent_t event;
+    GateFSM_Init();
     while(1)
     {
+       if(xQueueReceive(xGateEventQueue, &event, portMAX_DELAY) == pdPASS)
+        {
+            GateFSM_ProcessEvent(event);
+        }
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 }

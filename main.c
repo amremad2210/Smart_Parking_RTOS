@@ -105,12 +105,10 @@ static void App_CreateRTOSObjects(void)
 static void App_CreateTasks(void)
 {
     xTaskCreate(vInputTask, "Input", INPUT_TASK_STACK_SIZE, NULL, INPUT_TASK_PRIORITY, NULL);
-		xTaskCreate(vGateControlTask, "GateCtrl", INPUT_TASK_STACK_SIZE, NULL, INPUT_TASK_PRIORITY, NULL);
-		xTaskCreate(vSafetyTask, "Safety", INPUT_TASK_STACK_SIZE, NULL, INPUT_TASK_PRIORITY, NULL);
-		xTaskCreate(vLEDTask, "LED", INPUT_TASK_STACK_SIZE, NULL, INPUT_TASK_PRIORITY, NULL);
-		xTaskCreate(vStatusTask, "Status", INPUT_TASK_STACK_SIZE, NULL, INPUT_TASK_PRIORITY, NULL);
-	
-	
+    xTaskCreate(vGateControlTask, "GateCtrl", GATE_TASK_STACK_SIZE, NULL, GATE_CONTROL_TASK_PRIORITY, NULL);
+    xTaskCreate(vSafetyTask, "Safety", SAFETY_TASK_STACK_SIZE, NULL, SAFETY_TASK_PRIORITY, NULL);
+    xTaskCreate(vLEDTask, "LED", LED_TASK_STACK_SIZE, NULL, LED_TASK_PRIORITY, NULL);
+    xTaskCreate(vStatusTask, "Status", STATUS_TASK_STACK_SIZE, NULL, STATUS_TASK_PRIORITY, NULL);
 }
 
 

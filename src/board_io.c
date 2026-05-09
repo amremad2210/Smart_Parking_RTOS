@@ -1,45 +1,74 @@
 #include "board_io.h"
 #include <stdint.h>
 #include <stdbool.h>
-#include "tm4c123gh6pm.h" // Use the header with direct register definitions
+#include "tm4c123gh6pm.h" // Standard register definitions
 
+/**
+ * @brief Initializes all GPIO peripherals for the Smart Parking System.
+ * 
+ * Pins Summary:
+ * - PF3: Green LED (Output)
+ * - PF1: Red LED (Output)
+ * - PF4: Obstacle Sensor (Input, PDR)
+ * - PD1, PD0: Driver Buttons (Input, PDR)
+ * - PE1, PE0: Security Buttons (Input, PDR)
+ * - PB1, PB0: Limit Switches (Input, PDR)
+ */
 void Board_Init(void)
 {
-    /* 1. Enable clocks for Ports B, D, E, F */
-    SYSCTL_RCGCGPIO_R |= 0x3A; // 0x3A = 0011 1010 (Bits for F, E, D, B)
+    /* 1. Enable clocks for Ports B, D, E, and F */
+    /* Port B: bit 1, Port D: bit 3, Port E: bit 4, Port F: bit 5 */
+    SYSCTL_RCGCGPIO_R |= 0x3A; 
     
     /* 2. Wait for peripherals to be ready */
     while ((SYSCTL_PRGPIO_R & 0x3A) != 0x3A) { }
 
     /* 3. UNLOCK Port D Pin 0 (Required for Driver CLOSE) */
-    GPIO_PORTD_LOCK_R = 0x4C4F434B; // Magic Key
-    GPIO_PORTD_CR_R |= 0x01;        // Commit PD0
+    /* PD0 is locked by default as an NMI pin. We must unlock it to use as GPIO. */
+    GPIO_PORTD_LOCK_R = 0x4C4F434B; // Unlock Key
+    GPIO_PORTD_CR_R |= 0x01;        // Allow changes to PD0
     GPIO_PORTD_LOCK_R = 0;          // Relock
 
-    /* --- PORT F Configuration (LEDs PF1, PF3 | Obstacle PF4) --- */
-    GPIO_PORTF_DIR_R   |=  (1U << 1) | (1U << 3); // PF1, PF3 outputs
-    GPIO_PORTF_DIR_R   &= ~(1U << 4);             // PF4 input
-    GPIO_PORTF_AFSEL_R &= ~0x1A;                  // Disable alt functions
-    GPIO_PORTF_PDR_R   |=  (1U << 4);             // Obstacle is active-high (Pull-down)
-    GPIO_PORTF_DEN_R   |=  0x1A;                  // Digital enable PF1, 3, 4
+    /* 4. Configure PORT F (LEDs PF1, PF3 | Obstacle PF4) */
+    GPIO_PORTF_DIR_R   |=  (1U << 1) | (1U << 3); // PF1, PF3 as Outputs
+    GPIO_PORTF_DIR_R   &= ~(1U << 4);             // PF4 as Input
+    GPIO_PORTF_AFSEL_R &= ~0x1A;                  // Disable alternate functions
+    GPIO_PORTF_AMSEL_R &= ~0x1A;                  // Disable analog mode
+    //GPIO_PORTF_PDR_R   |=  (1U << 4);             // Enable Pull-Down Resistor on PF4
+    GPIO_PORTF_DEN_R   |=  0x1A;                  // Digital Enable PF1, PF3, PF4
 
-    /* --- PORT E Configuration (Security PE0, PE1) --- */
+    /* 5. Configure PORT E (Security PE0, PE1) */
     GPIO_PORTE_DIR_R   &= ~0x03;                  // Inputs
-    GPIO_PORTE_PUR_R   |=  0x03;                  // Active-low (Pull-up)
-    GPIO_PORTE_DEN_R   |=  0x03;                  // Digital enable
+    GPIO_PORTE_AMSEL_R &= ~0x03;                  // Disable analog
+    GPIO_PORTE_PDR_R   |=  0x03;                  // Enable Pull-Down Resistors
+		//GPIO_PORTE_PDR_R &= ~0x03;
+    GPIO_PORTE_DEN_R   |=  0x03;                  // Digital Enable
 
-    /* --- PORT B Configuration (Limits PB0, PB1) --- */
+    /* 6. Configure PORT B (Limits PB0, PB1) */
     GPIO_PORTB_DIR_R   &= ~0x03;                  // Inputs
-    GPIO_PORTB_PUR_R   |=  0x03;                  // Active-low (Pull-up)
-    GPIO_PORTB_DEN_R   |=  0x03;                  // Digital enable
+    GPIO_PORTB_AMSEL_R &= ~0x03;                  // Disable analog
+    GPIO_PORTB_PDR_R   |=  0x03;                  // Enable Pull-Down Resistors
+		//GPIO_PORTB_PDR_R &= ~0x03;
+    GPIO_PORTB_DEN_R   |=  0x03;                  // Digital Enable
 
-    /* --- PORT D Configuration (Driver PD0, PD1) --- */
+    /* 7. Configure PORT D (Driver PD0, PD1) */
     GPIO_PORTD_DIR_R   &= ~0x03;                  // Inputs
-    GPIO_PORTD_PUR_R   |=  0x03;                  // Active-low (Pull-up)
-    GPIO_PORTD_DEN_R   |=  0x03;                  // Digital enable
+    GPIO_PORTD_AMSEL_R &= ~0x03;                  // Disable analog
+    GPIO_PORTD_PDR_R   |=  0x03;                  // Enable Pull-Down Resistors
+		//GPIO_PORTD_PDR_R &= ~0x03;
+    GPIO_PORTD_DEN_R   |=  0x03;                  // Digital Enable
+		
+		/* Driver (PD0, PD1) and Security (PE0, PE1) 
+       Set to Standard (no PDR/PUR) so you can manually uncheck boxes */
+    //GPIO_PORTD_DIR_R &= ~0x03; GPIO_PORTD_PUR_R &= ~0x03; GPIO_PORTD_PDR_R &= ~0x03; GPIO_PORTD_DEN_R |= 0x03;
+   // GPIO_PORTE_DIR_R &= ~0x03; GPIO_PORTE_PUR_R &= ~0x03; GPIO_PORTE_PDR_R &= ~0x03; GPIO_PORTE_DEN_R |= 0x03;
+
+    /* Start with LEDs OFF */
+    GPIO_PORTF_DATA_R &= ~((1U << 1) | (1U << 3));
 }
 
-/* --- Output Logic --- */
+/* --- LED Control Functions --- */
+
 void Board_SetGreenLED(bool on) {
     if (on) GPIO_PORTF_DATA_R |= (1U << 3);
     else    GPIO_PORTF_DATA_R &= ~(1U << 3);
@@ -50,25 +79,17 @@ void Board_SetRedLED(bool on) {
     else    GPIO_PORTF_DATA_R &= ~(1U << 1);
 }
 
-/* --- Input Logic (Matching PDF requirements) --- */
+/* --- Input Read Functions --- */
+/* Logic: PDR forces pin to 0. Checking the box in simulator forces it to 1.
+   Therefore, if bit is NOT 0, the button is "Pressed". */
 
-// PD1 (Driver OPEN) - Active Low
-bool Board_ReadDriverOpen(void)    { return (GPIO_PORTD_DATA_R & (1U << 1)) == 0; }
+bool Board_ReadDriverOpen(void)    { return (GPIO_PORTD_DATA_R & (1U << 1)) != 0; }
+bool Board_ReadDriverClose(void)   { return (GPIO_PORTD_DATA_R & (1U << 0)) != 0; }
 
-// PD0 (Driver CLOSE) - Active Low
-bool Board_ReadDriverClose(void)   { return (GPIO_PORTD_DATA_R & (1U << 0)) == 0; }
+bool Board_ReadSecurityOpen(void)  { return (GPIO_PORTE_DATA_R & (1U << 1)) != 0; }
+bool Board_ReadSecurityClose(void) { return (GPIO_PORTE_DATA_R & (1U << 0)) != 0; }
 
-// PE1 (Security OPEN) - Active Low
-bool Board_ReadSecurityOpen(void)  { return (GPIO_PORTE_DATA_R & (1U << 1)) == 0; }
+bool Board_ReadOpenLimit(void)     { return (GPIO_PORTB_DATA_R & (1U << 1)) != 0; }
+bool Board_ReadClosedLimit(void)   { return (GPIO_PORTB_DATA_R & (1U << 0)) != 0; }
 
-// PE0 (Security CLOSE) - Active Low
-bool Board_ReadSecurityClose(void) { return (GPIO_PORTE_DATA_R & (1U << 0)) == 0; }
-
-// PB1 (Open Limit) - Active Low
-bool Board_ReadOpenLimit(void)     { return (GPIO_PORTB_DATA_R & (1U << 1)) == 0; }
-
-// PB0 (Closed Limit) - Active Low
-bool Board_ReadClosedLimit(void)   { return (GPIO_PORTB_DATA_R & (1U << 0)) == 0; }
-
-// PF4 (Obstacle) - Active High (Instruction says Active-High)
 bool Board_ReadObstacle(void)      { return (GPIO_PORTF_DATA_R & (1U << 4)) != 0; }

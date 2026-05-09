@@ -1,18 +1,9 @@
 #ifndef GATE_TYPES_H
 #define GATE_TYPES_H
 
-/*
- * gate_types.h
- *
- * Purpose:
- * - Shared state and event types for the whole project.
- * - No hardware code here.
- * - No FreeRTOS objects here.
- */
+#include <stdint.h>
 
-/*
- * Required gate states from the project state machine.
- */
+/* Existing Gate States */
 typedef enum
 {
     IDLE_OPEN = 0,
@@ -23,37 +14,36 @@ typedef enum
     REVERSING
 } GateState_t;
 
-/*
- * Events that the Input Task will eventually send to the Gate Control Task.
- */
 typedef enum
 {
     EVT_NONE = 0,
-
-    EVT_DRIVER_OPEN_PRESS,
-    EVT_DRIVER_OPEN_RELEASE,
-    EVT_DRIVER_CLOSE_PRESS,
-    EVT_DRIVER_CLOSE_RELEASE,
-
-    EVT_SECURITY_OPEN_PRESS,
-    EVT_SECURITY_OPEN_RELEASE,
-    EVT_SECURITY_CLOSE_PRESS,
-    EVT_SECURITY_CLOSE_RELEASE,
-
+    /* Driver */
+    EVT_DRIVER_OPEN_AUTO,
+    EVT_DRIVER_OPEN_MANUAL_START,
+    EVT_DRIVER_OPEN_MANUAL_RELEASE,
+    EVT_DRIVER_CLOSE_AUTO,
+    EVT_DRIVER_CLOSE_MANUAL_START,
+    EVT_DRIVER_CLOSE_MANUAL_RELEASE,
+    /* Security */
+    EVT_SECURITY_OPEN_AUTO,
+    EVT_SECURITY_OPEN_MANUAL_START,
+    EVT_SECURITY_OPEN_MANUAL_RELEASE,
+    EVT_SECURITY_CLOSE_AUTO,
+    EVT_SECURITY_CLOSE_MANUAL_START,
+    EVT_SECURITY_CLOSE_MANUAL_RELEASE,
+    /* Common */
     EVT_OPEN_LIMIT_PRESS,
     EVT_CLOSED_LIMIT_PRESS,
-
     EVT_OBSTACLE_PRESS,
-
-    EVT_REVERSE_TIMEOUT
+		EVT_OBSTACLE_RELEASE,
+    EVT_CONFLICT,           /* Sent when Open/Close on same panel are < 0.5s apart */
+    EVT_REVERSE_TIMEOUT 
 } GateEventType_t;
 
-/*
- * Queue message structure.
- */
+/* Queue Message Structure */
 typedef struct
 {
     GateEventType_t type;
 } GateEvent_t;
 
-#endif
+#endif /* GATE_TYPES_H */

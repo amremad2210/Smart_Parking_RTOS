@@ -55,6 +55,7 @@
             || event.type == EVT_DRIVER_CLOSE_MANUAL_START || event.type == EVT_SECURITY_CLOSE_MANUAL_START)
             {
                 GateFSM_SetState(CLOSING);
+                printf("Gate is closing\n");
                 //turn LED red
             }
             break;
@@ -63,6 +64,7 @@
             || event.type == EVT_DRIVER_OPEN_MANUAL_START || event.type == EVT_SECURITY_OPEN_MANUAL_START)
             {
                 GateFSM_SetState(OPENING);
+                printf("Gate is opening\n");
                 //turn LED green
             }
             break;
@@ -71,11 +73,13 @@
             || event.type == EVT_CONFLICT)
             {
                 GateFSM_SetState(STOPPED_MIDWAY);
+                printf("Gate is stopped midway while opening\n");
                 //turn off LED
             }
             else if(event.type == EVT_OPEN_LIMIT_PRESS)
             {
                 GateFSM_SetState(IDLE_OPEN);
+                printf("Gate is idle open\n");
                 //turn off LED
             }
             break;
@@ -84,17 +88,20 @@
             || event.type == EVT_CONFLICT)
             {
                 GateFSM_SetState(STOPPED_MIDWAY);
+                printf("Gate is stopped midway while closing\n");
                 //turn off LED
             }
             else if(event.type == EVT_CLOSED_LIMIT_PRESS)
             {
                 GateFSM_SetState(IDLE_CLOSED);
+                printf("Gate is idle closed\n");
                 //turn off LED
             }
             else if(event.type == EVT_OBSTACLE_PRESS)
             {
                 GateFSM_SetState(REVERSING);
                 xSemaphoreGive(xObstacleSemaphore);
+                printf("Obstacle detected, Gate is reversing\n");
                 //turn LED green
             }
             break;
@@ -103,12 +110,14 @@
             || event.type == EVT_DRIVER_OPEN_MANUAL_START || event.type == EVT_SECURITY_OPEN_MANUAL_START)
             {
                 GateFSM_SetState(OPENING);
+                printf("Gate is opening from midway\n");
                 //turn LED green
             }
             else if(event.type == EVT_DRIVER_CLOSE_AUTO || event.type == EVT_SECURITY_CLOSE_AUTO 
             || event.type == EVT_DRIVER_CLOSE_MANUAL_START || event.type == EVT_SECURITY_CLOSE_MANUAL_START)
             {
                 GateFSM_SetState(CLOSING);
+                printf("Gate is closing from midway\n");
                 //turn LED red
             }
             break;
@@ -116,6 +125,7 @@
             if (event.type == EVT_REVERSE_TIMEOUT)
             {
                 GateFSM_SetState(STOPPED_MIDWAY);
+                printf("Gate is stopped midway while reversing\n");
                 //turn off LED
             }
             break;

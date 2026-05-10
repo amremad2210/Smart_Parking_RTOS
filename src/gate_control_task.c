@@ -27,17 +27,18 @@
 
 bool securityInControl = false;
 
-
 void UpdateSecurityFlag(GateEvent_t event) {
+    GateState_t state;
+    state = GateFSM_GetState();
     if (event.type == EVT_SECURITY_OPEN_AUTO || event.type == EVT_SECURITY_OPEN_MANUAL_START
     || event.type == EVT_SECURITY_CLOSE_AUTO || event.type == EVT_SECURITY_CLOSE_MANUAL_START)
     {
         securityInControl = true;
         printf("Security is in control\n");
     }
-    else if ((event.type == EVT_SECURITY_OPEN_MANUAL_RELEASE || event.type == EVT_SECURITY_CLOSE_MANUAL_RELEASE
-    || event.type == EVT_OPEN_LIMIT_PRESS || event.type == EVT_CLOSED_LIMIT_PRESS || event.type == EVT_OBSTACLE_PRESS) 
-    && securityInControl)
+    else if ((((event.type == EVT_SECURITY_OPEN_MANUAL_RELEASE || event.type == EVT_OPEN_LIMIT_PRESS) && state == OPENING) || 
+        ((event.type == EVT_SECURITY_CLOSE_MANUAL_RELEASE || event.type == EVT_CLOSED_LIMIT_PRESS) && state == CLOSING)
+        || event.type == EVT_OBSTACLE_PRESS) && securityInControl)
     {
         securityInControl = false;
         printf("Clearing security control flag\n");
@@ -69,7 +70,7 @@ void vGateControlTask(void *pvParameters)
             UpdateSecurityFlag(event);
             GateFSM_ProcessEvent(event);
         }
-       if(xQueueReceive(xGateEventQueue, &event, portMAX_DELAY) == pdPASS)
+       if(xQueueReceive(xGateEventQueue, &event, pdMS_TO_TICKS(10)) == pdPASS)
         {
             UpdateSecurityFlag(event);
             if (isDriverCmd(event) && securityInControl)

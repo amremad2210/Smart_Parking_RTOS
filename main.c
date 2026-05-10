@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <stdio.h>>
+#include <stdio.h>
 
 #include "inc/hw_memmap.h"
 #include "driverlib/sysctl.h"
@@ -114,30 +114,24 @@ static void App_CreateTasks(void)
 
 int main(void)
 {
-    /*
-     * Initialize GPIO and board hardware.
-     */
+    /* 1. Initialize GPIO and board hardware */
     Board_Init();
 
-    /*
-     * Create RTOS synchronization and communication objects.
+    /* 
+     * 2. Initialize UART for printf debugging.
+     * Note: If you are using the university basic_io library, 
+     * the function is usually vUARTInit() or UARTStdioConfig().
      */
+    // vUARTInit(); // Uncomment or add your UART init function here
+
+    /* 3. Create RTOS synchronization and communication objects */
     App_CreateRTOSObjects();
 
-    /*
-     * Create all tasks.
-     */
+    /* 4. Create all tasks */
     App_CreateTasks();
 
-    /*
-     * Start FreeRTOS scheduler.
-     */
+    /* 5. Start FreeRTOS scheduler */
     vTaskStartScheduler();
 
-    /*
-     * Should never reach here.
-     */
-    while(1)
-    {
-    }
+    while(1);
 }

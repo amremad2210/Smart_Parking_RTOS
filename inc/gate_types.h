@@ -1,18 +1,9 @@
 #ifndef GATE_TYPES_H
 #define GATE_TYPES_H
 
-/*
- * gate_types.h
- *
- * Purpose:
- * - Shared state and event types for the whole project.
- * - No hardware code here.
- * - No FreeRTOS objects here.
- */
+#include <stdint.h>
 
-/*
- * Required gate states from the project state machine.
- */
+/* Existing Gate States */
 typedef enum
 {
     IDLE_OPEN = 0,
@@ -23,9 +14,6 @@ typedef enum
     REVERSING
 } GateState_t;
 
-/*
- * Events that the Input Task will eventually send to the Gate Control Task.
- */
 typedef enum
 {
     EVT_NONE = 0,
@@ -60,4 +48,4 @@ typedef struct
     GateEventType_t type;
 } GateEvent_t;
 
-#endif
+#endif /* GATE_TYPES_H */

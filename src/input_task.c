@@ -136,11 +136,11 @@ static void ProcessSimpleButton(ButtonState_t *btn, bool currentRaw,
         SendEvent(pressEvt);
     }
     // FALLING EDGE
-    else if (currentRaw == false && btn->previousStableState == true) {
+    /*else if (currentRaw == false && btn->previousStableState == true) {
         if (showRelease) {
             printf("[INPUT] %s Released\n", dbgName);
         }
-    }
+    }*/
     
     btn->previousStableState = currentRaw;
 }

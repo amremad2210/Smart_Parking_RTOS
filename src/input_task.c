@@ -1,6 +1,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "semphr.h" 
 #include "input_task.h"
 #include "board_io.h"
 #include "gate_shared.h"
@@ -16,13 +17,14 @@ static void ProcessPanelButtons(ButtonState_t *openBtn, ButtonState_t *closeBtn,
                                 const char* panelName);
 
 static void ProcessSimpleButton(ButtonState_t *btn, bool currentRaw, 
-                                GateEventType_t pressEvt, const char* dbgName, bool showRelease);
+                                GateEventType_t pressEvt, const char* dbgName, 
+                                 SemaphoreHandle_t xSem);
 
 static void SendEvent(GateEventType_t type);
 
 void vInputTask(void *pvParameters) {
     static ButtonState_t bDrOpen = {0}, bDrClose = {0}, bSecOpen = {0}, bSecClose = {0};
-    static ButtonState_t bLimOpen = {0}, bLimClose = {0}, bObs = {0};
+    static ButtonState_t bLimOpen = {0}, bLimClose = {0}, bObs = {1};
 
     vTaskDelay(pdMS_TO_TICKS(100));
 
@@ -35,12 +37,12 @@ void vInputTask(void *pvParameters) {
     bLimClose.previousStableState = Board_ReadClosedLimit();
     bObs.previousStableState = Board_ReadObstacle();
 
-    if (INPUT_DEBUG) printf("[INPUT] System Ready. 1-click=AUTO, 2-click=HOLD, 3-click=REL\n");
+    if (INPUT_DEBUG) printf("[INPUT] System Ready. Limit Semaphores active.\n");
 
     TickType_t xLastWakeTime = xTaskGetTickCount();
 
     for (;;) {
-        /* Process Driver Panel (Double-Click / Conflict Logic) */
+        /* Process Driver Panel (Conflict/Tap/Hold Logic) */
         ProcessPanelButtons(&bDrOpen, &bDrClose, 
                             EVT_DRIVER_OPEN_AUTO, EVT_DRIVER_OPEN_MANUAL_START, EVT_DRIVER_OPEN_MANUAL_RELEASE,
                             EVT_DRIVER_CLOSE_AUTO, EVT_DRIVER_CLOSE_MANUAL_START, EVT_DRIVER_CLOSE_MANUAL_RELEASE,
@@ -52,15 +54,44 @@ void vInputTask(void *pvParameters) {
                             EVT_SECURITY_CLOSE_AUTO, EVT_SECURITY_CLOSE_MANUAL_START, EVT_SECURITY_CLOSE_MANUAL_RELEASE,
                             "SECURITY");
 
-        /* Process Limit Buttons - showRelease set to false */
-        ProcessSimpleButton(&bLimOpen, Board_ReadOpenLimit(), EVT_OPEN_LIMIT_PRESS, "Limit OPEN", false);
-        ProcessSimpleButton(&bLimClose, Board_ReadClosedLimit(), EVT_CLOSED_LIMIT_PRESS, "Limit CLSD", false);
+        /* Process Limit Buttons - Signals Semaphores for instant stop */
+        ProcessSimpleButton(&bLimOpen, Board_ReadOpenLimit(), 
+                            EVT_OPEN_LIMIT_PRESS, "Limit OPEN", xOpenLimitSemaphore);
         
-        /* Process Obstacle - showRelease set to true */
-        ProcessSimpleButton(&bObs, Board_ReadObstacle(), EVT_OBSTACLE_PRESS, "Obstacle", true);
+        ProcessSimpleButton(&bLimClose, Board_ReadClosedLimit(), 
+                            EVT_CLOSED_LIMIT_PRESS, "Limit CLSD", xClosedLimitSemaphore);
+        
+        /* Process Obstacle - No Semaphore, just prints release */
+        ProcessSimpleButton(&bObs, Board_ReadObstacle(), 
+                            EVT_OBSTACLE_PRESS, "Obstacle", NULL);
 
         vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(INPUT_POLL_PERIOD_MS));
     }
+}
+
+/**
+ * @brief Simple edge detection for Obstacle and Limits.
+ * @param showRelease If true, prints "Released" message on falling edge.
+ * @param xSem The Semaphore to give on rising edge (can be NULL).
+ */
+static void ProcessSimpleButton(ButtonState_t *btn, bool currentRaw, 
+                                GateEventType_t pressEvt, const char* dbgName, SemaphoreHandle_t xSem) 
+{
+    // RISING EDGE: Pressed
+    if (currentRaw == true && btn->previousStableState == false) {
+        printf("[INPUT] %s Pressed\n", dbgName);
+        
+        /* Signal high-priority semaphore if assigned */
+        if (xSem != NULL) {
+					xSemaphoreGive(xSem);
+        }
+				if (dbgName == "Obstacle"){
+					SendEvent(pressEvt);
+				}
+    }
+    
+    
+    btn->previousStableState = currentRaw;
 }
 
 /**
@@ -123,33 +154,9 @@ static void ProcessPanelButtons(ButtonState_t *openBtn, ButtonState_t *closeBtn,
                          closeAuto, closeHold, closeRel, panelName);
 }
 
-/**
- * @brief Simple edge detection for Obstacle and Limits.
- * @param showRelease If true, prints "Released" message.
- */
-static void ProcessSimpleButton(ButtonState_t *btn, bool currentRaw, 
-                                GateEventType_t pressEvt, const char* dbgName, bool showRelease) 
-{
-    // RISING EDGE
-    if (currentRaw == true && btn->previousStableState == false) {
-        printf("[INPUT] %s Pressed\n", dbgName);
-        SendEvent(pressEvt);
-    }
-    // FALLING EDGE
-    /*else if (currentRaw == false && btn->previousStableState == true) {
-        if (showRelease) {
-            printf("[INPUT] %s Released\n", dbgName);
-        }
-    }*/
-    
-    btn->previousStableState = currentRaw;
-}
-
 static void SendEvent(GateEventType_t type) {
     if (type == EVT_NONE) return;
     GateEvent_t event = { .type = type };
-    
-    // Non-blocking send to the shared queue
     if (xQueueSend(xGateEventQueue, &event, 0) != pdPASS) {
         if (INPUT_DEBUG) printf("[INPUT] Warning: Queue full, dropped event %d\n", type);
     }

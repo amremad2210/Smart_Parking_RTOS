@@ -1,8 +1,6 @@
 #ifndef SAFETY_TASK_H
 #define SAFETY_TASK_H
 
-
-
 /*
  * safety_task.h
  *
@@ -13,9 +11,12 @@
  * - the Safety Task function
  * - any public safety helper functions if needed
  */
+
+
  
  
  void vSafetyTask(void *pvParameters);
+ 
 
  
  

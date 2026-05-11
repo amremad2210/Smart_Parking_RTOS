@@ -24,6 +24,7 @@
 #include "gate_control_task.h"
 #include "gate_shared.h"
 #include "gate_fsm.h"
+#include "status_task.h"
 
 bool securityInControl = false;
 
@@ -62,12 +63,14 @@ void vGateControlTask(void *pvParameters)
         {
             event.type = EVT_OPEN_LIMIT_PRESS;
             UpdateSecurityFlag(event);
+            Status_SetLastEvent(event.type);
             GateFSM_ProcessEvent(event);
         }
         if (xSemaphoreTake(xClosedLimitSemaphore, 0) == pdPASS)
         {
             event.type = EVT_CLOSED_LIMIT_PRESS;
             UpdateSecurityFlag(event);
+            Status_SetLastEvent(event.type);
             GateFSM_ProcessEvent(event);
         }
        if(xQueueReceive(xGateEventQueue, &event, pdMS_TO_TICKS(10)) == pdPASS)
@@ -80,6 +83,7 @@ void vGateControlTask(void *pvParameters)
             }
             else
             {
+                Status_SetLastEvent(event.type);
                 GateFSM_ProcessEvent(event);
             }
         }

@@ -28,14 +28,15 @@
 
 bool securityInControl = false;
 
-void UpdateSecurityFlag(GateEvent_t event) {
+static void UpdateSecurityFlag(GateEvent_t event) {
     GateState_t state;
     state = GateFSM_GetState();
     if (event.type == EVT_SECURITY_OPEN_AUTO || event.type == EVT_SECURITY_OPEN_MANUAL_START
     || event.type == EVT_SECURITY_CLOSE_AUTO || event.type == EVT_SECURITY_CLOSE_MANUAL_START)
     {
+        if (!securityInControl)
+            printf("Security is in control\n");
         securityInControl = true;
-        printf("Security is in control\n");
     }
     else if ((((event.type == EVT_SECURITY_OPEN_MANUAL_RELEASE || event.type == EVT_OPEN_LIMIT_PRESS) && state == OPENING) || 
         ((event.type == EVT_SECURITY_CLOSE_MANUAL_RELEASE || event.type == EVT_CLOSED_LIMIT_PRESS) && state == CLOSING)
@@ -46,7 +47,24 @@ void UpdateSecurityFlag(GateEvent_t event) {
     }
 }
 
-bool isDriverCmd (GateEvent_t event) {
+static bool isSecurityConflict(GateEvent_t event)
+{
+    GateState_t state = GateFSM_GetState();
+
+    // security sends close while security is already opening
+    if ((event.type == EVT_SECURITY_CLOSE_AUTO || event.type == EVT_SECURITY_CLOSE_MANUAL_START)
+        && state == OPENING && securityInControl)
+        return true;
+
+    // security sends open while security is already closing
+    if ((event.type == EVT_SECURITY_OPEN_AUTO || event.type == EVT_SECURITY_OPEN_MANUAL_START)
+        && state == CLOSING && securityInControl)
+        return true;
+
+    return false;
+}
+
+static bool isDriverCmd (GateEvent_t event) {
     return event.type == EVT_DRIVER_OPEN_AUTO || event.type == EVT_DRIVER_OPEN_MANUAL_START
     || event.type == EVT_DRIVER_CLOSE_AUTO || event.type == EVT_DRIVER_CLOSE_MANUAL_START
     || event.type == EVT_DRIVER_OPEN_MANUAL_RELEASE || event.type == EVT_DRIVER_CLOSE_MANUAL_RELEASE;
@@ -74,17 +92,23 @@ void vGateControlTask(void *pvParameters)
             GateFSM_ProcessEvent(event);
         }
        if(xQueueReceive(xGateEventQueue, &event, pdMS_TO_TICKS(10)) == pdPASS)
-        {
-            UpdateSecurityFlag(event);
-            if (isDriverCmd(event) && securityInControl)
-            {
-                printf("Security is in control, ignoring driver command\n");
+        {   
+            if (isSecurityConflict(event)){
                 continue;
             }
             else
             {
-                Status_SetLastEvent(event.type);
-                GateFSM_ProcessEvent(event);
+                UpdateSecurityFlag(event);
+                if (isDriverCmd(event) && securityInControl)
+                {
+                    printf("Security is in control, ignoring driver command\n");
+                    continue;
+                }
+                else
+                {
+                    Status_SetLastEvent(event.type);
+                    GateFSM_ProcessEvent(event);
+                }
             }
         }
         vTaskDelay(pdMS_TO_TICKS(100));

@@ -74,6 +74,7 @@ static void App_CreateRTOSObjects(void)
      * Mutex used to protect shared gate state.
      */
     xGateStateMutex = xSemaphoreCreateMutex();
+    securityInControl = false;
 
     /*
      * Binary semaphores for urgent events.

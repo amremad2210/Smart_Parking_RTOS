@@ -12,10 +12,16 @@
  * - the Gate Control Task function
  * - any public control-task helper functions if needed
  */
+
+
+ #include <stdbool.h>
+ #include "FreeRTOS.h"
+ #include "semphr.h"
  
  
  void vGateControlTask(void *pvParameters);
 
+ extern bool securityInControl;
  
  
  #endif

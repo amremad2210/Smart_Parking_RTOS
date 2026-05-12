@@ -20,7 +20,6 @@
 
 /* Timing configuration */
 #define INPUT_POLL_PERIOD_MS    10   // Poll faster (10ms)
-#define DEBOUNCE_TIME_MS         0   // Disable debounce for simulator "clicks"
 #define LED_TASK_PERIOD_MS            50
 #define STATUS_TASK_PERIOD_MS         1000
 

@@ -91,8 +91,7 @@ static void App_CreateRTOSObjects(void)
         (xGateStateMutex == NULL) ||
         (xOpenLimitSemaphore == NULL) ||
         (xClosedLimitSemaphore == NULL) ||
-        (xObstacleSemaphore == NULL) ||
-        (securityInControl == NULL) )
+        (xObstacleSemaphore == NULL) )
     {
         while(1)
         {
